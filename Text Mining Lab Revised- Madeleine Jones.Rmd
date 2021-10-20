@@ -1,0 +1,372 @@
+---
+title: "Text Mining Lab- Madeleine Jones"
+author: "Madeleine Jones"
+date: "10/20/2021"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+## Newspaper 1: The Philadelphia Inquirer 
+```{r}
+library(tidyverse)  # load the required packages
+library(tidytext)
+library(ggwordcloud)
+library(gutenbergr)
+library(textdata)
+library(DT)
+library(patchwork)
+```
+
+### Reading in, Cleaning, and Counting Word Ocurrences in Article Files 
+
+```{r}
+# reading in all of the txt files
+a1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/A frightening future for butterflies.txt", header = FALSE)
+a2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/A Rising Threat To Water Systems.txt", header = FALSE)
+a3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Along coast_ climate change demands urgent action.txt", header = FALSE)
+a4 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Climate change response needs carbon pricing.txt", header = FALSE)
+a5 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Climate change should concern pro-lifers.txt", header = FALSE)
+a6 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Conservatives_ but green_ too.txt", header = FALSE)
+a7 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Fall Palette.txt", header = FALSE)
+a8 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/How Climate Change Could Affect Wine.txt", header = FALSE)
+a9 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Ida_s fury.txt", header = FALSE)
+a10 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Let_s speak for the trees.txt", header = FALSE)
+a11 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Mosquitos get more biting days.txt", header = FALSE)
+a12 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Pa. chicken farming may rise due to climate change.txt", header = FALSE)
+a13 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Index fund giant takes on climate change.txt", header = FALSE)
+a14 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Teen voices on climate change.txt", header = FALSE)
+a15 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/The planet_s other threat.txt", header = FALSE)
+a16 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/The price of extreme weather.txt", header = FALSE)
+a17 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Weather service director to retire.txt", header = FALSE)
+a18 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Wharton prof joins Democratic race for Senate.txt", header = FALSE)
+```
+
+```{r}
+# trimming all txt files to body of article
+a1 <- a1[22:48,]
+a2 <- a2[22:100,]
+a3 <- a3[21:40,]
+a4 <- a4[21:46,]
+a5 <- a5[21:43,]
+a6 <- a6[22:53,]
+a7 <- a7[22:40,]
+a8 <- a8[22:49,]
+a9 <- a9[22:67,]
+a10 <- a10[22:41,]
+a11 <- a11[22:58,]
+a12 <- a12[21:51,]
+a13 <- a13[22:66,]
+a14 <- a14[21:83,]
+a15 <- a15[22:50,]
+a16 <- a16[22:50,]
+a17 <- a17[22:53,]
+a18 <- a18[22:42,]
+
+```
+
+```{r}
+philly_words <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18)  # create a list of all of the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+philly_words <- lapply(philly_words, combinecols)  # combine the columns of the articles so that each article only has one column of text
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+combine_philly_words <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(philly_words[x]), 'V1', paste('V', nrow(data.frame(philly_words[x])), sep="")) # use the data prep function for the x-th article
+}
+
+combined_philly_words <- data.frame(sapply(1:18, combine_philly_words))
+
+long_philly_words <- data.frame(t(combined_philly_words))
+
+long_philly_words <- long_philly_words %>%    # unnest to words, remove the anti words, and count the frequency of words
+  unnest_tokens(word, t.combined_philly_words.)%>%
+  anti_join(stop_words)%>%
+  count(word, sort=TRUE)
+
+datatable(long_philly_words)
+```
+
+### Word Cloud of Most Popular Words
+```{r}
+set.seed(1)
+ggplot(long_philly_words[1:50,], aes(label = word, size = n)  # creates world cloud
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+```
+
+As depicted by both the list of most frequent words and the word cloud which sizes words based in prevalence, the most common terms used along with climate change in the Philadelphia region are water, people, Pennsylvania, weather, environmental, carbon, flood, and plant.  This seems to portray an internal focus on the people of Pennsylvania rather than a more outward focus towards the country or world-wide climate change issue.  Furthermore, there appears to be an emphasis on the environment, with water, flooding, storms, and emissions all written in the word cloud, as well as reference to hurricane Ida.  Finally, there appears to be a slight draw to the stock market as Vanguard and funds, presumably mutual funds, are listed in the word cloud.  This could be due to the close proximity to New York City.  
+
+### Sentiment Analysis Methods {.tabset}
+```{r}
+philly_sentiment_affin <- long_philly_words %>%
+  inner_join(get_sentiments("afinn")) #using a inner join to match words and add the sentiment variable
+
+philly_sentiment_nrc <- long_philly_words %>%
+  inner_join(get_sentiments("nrc"))
+
+philly_sentiment_bing <- long_philly_words %>%
+  inner_join(get_sentiments("bing"))
+```
+
+#### AFFIN
+```{r}
+philly_affin_plot <- ggplot(data = philly_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram(binwidth = 1)+
+  ggtitle("Philadelphia Sentiment Range")+
+  theme_minimal()
+
+philly_affin_plot
+```
+
+
+#### NRC
+```{r}
+table(philly_sentiment_nrc$sentiment)
+```
+
+
+#### BING
+```{r}
+table(philly_sentiment_bing$sentiment) 
+```
+
+### Sentiment Analysis Discussion
+Using the AFFIN scale plot, it appears that while sentiment might be slightly more negative regarding climate change, the divide is overall relatively even between positive and negative terminology.  This is emphasized by the BING negative vs positive method in that around 59% of the words were negative and 41% were positive.  Looking more in depth at different forms of sentiment using the NRC method, positive sentiment actually has the most words associated with it, followed by negative, trust, fear, and anticipation.  The trust and anticipation sentiments could be due to articles that discuss combating the current climate change trends for the improvement of world health, while the fear sentiments are likely coming from articles that discuss the current threats that climate change poses.  
+
+
+### Term Frequency - Inverse Document Frequency Analysis 
+
+```{r}
+word_bags <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18)  # create a list of all of the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+word_bags <- lapply(word_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+combine_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(word_bags[x]), 'V1', paste('V', nrow(data.frame(word_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+
+combined_word_bags <- data.frame(sapply(1:18, combine_bags))  # apply the combine bags function to each of the article indices
+
+article <- c("Article 1", "Article 2","Article 3","Article 4","Article 5","Article 6","Article 7","Article 8","Article 9","Article 10","Article 11","Article 12","Article 13","Article 14","Article 15","Article 16","Article 17","Article 18")  # create vector of article numbers
+
+tf_idf_text <- tibble(article,text=t(tibble(combined_word_bags, .name_repair = "universal")))  # create a tibble with combined word bags data and corresponding article names 
+
+word_count <- tf_idf_text %>%   # counts frequency on individual words
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+
+total_words <- word_count %>%    # counts total words in each article
+  group_by(article) %>% 
+  summarize(total = sum(n))
+
+article_words <- left_join(word_count, total_words)   # combine the data from the word count and total words data sets
+
+article_words <- article_words %>%  # calculate the tf_idf using the bind_tf_idf function : if * idf = tf_idf
+  bind_tf_idf(word, article, n)  
+
+sorted_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+
+datatable(sorted_article_words)  # print the tf_idf data
+```
+
+By conducting Term Frequency - Inverse Document Frequency analysis, we can see which terms are most prevalent in articles relative to their prevalence in the overall newspaper.  It appears that the terms with greatest relative prevalence are those related to specific topics or entities not necessarily relevant to the topic of Climate Change in general.  For example, Article 8 discusses the effects of climate change on wine, a specific topic not generally connected to climate change discussions, so terms that stand out are "wine" and "varieties."  Further, Article 13 highlights the efforts of index fund companies to combat climate change, so terms such as "Vanguard" and "Blackrock," index fund leaders, and "index" and "fund" stand out.   
+
+## Newspaper 2: The Tampa Bay Times
+
+### Reading in, Cleaning, and Counting Word Ocurrences in Article Files 
+
+```{r}
+# reading in all of the txt files
+b1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/As extreme weather increases_ climate misinformation ad.txt", header = FALSE)
+b2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Biden promises _relentless diplomacy_ to skeptical alli.txt", header = FALSE)
+b3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Biden says budget talks hit _stalemate__ _3.5T may take.txt", header = FALSE)
+b4 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Biden_ world leaders try to hammer out next steps to co.txt", header = FALSE)
+b5 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Climate activist Nakate seeks immediate action from wor.txt", header = FALSE)
+b6 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Climate change is a national security threat and econom.txt", header = FALSE)
+b7 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Climate change is also on the ballot in Clearwater_s el.txt", header = FALSE)
+b8 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Compare St. Petersburg mayoral candidates Ken Welch and.txt", header = FALSE)
+b9 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Congress takes aim at climate change in massive relief.txt", header = FALSE)
+b10 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Florida Legislature can do even more to make us resilie.txt", header = FALSE)
+b11 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Here_s how climate change could make future Red Tide bl.txt", header = FALSE)
+b12 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Himalayan glacier disaster highlights climate change ri.txt", header = FALSE)
+b13 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/How Florida ranchers can help fight climate change _ Co.txt", header = FALSE)
+b14 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/In St. Petersburg_ climate change smells like rotting f.txt", header = FALSE)
+b15 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/On climate change_ are we too stupid to live__ Columnis.txt", header = FALSE)
+b16 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Republicans should listen on climate change _ Palm Beac.txt", header = FALSE)
+b17 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Study_ Northwest heat wave impossible without climate c.txt", header = FALSE)
+b18 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/What_s next for climate change in Florida Legislature__.txt", header = FALSE)
+```
+
+```{r}
+# trimming all txt files to body of article
+b1 <- b1[21:64,]
+b2 <- b2[21:48,]
+b3 <- b3[21:43,]
+b4 <- b4[21:65,]
+b5 <- b5[21:32,]
+b6 <- b6[21:44,]
+b7 <- b7[22:84,]
+b8 <- b8[21:81,]
+b9 <- b9[21:40,]
+b10 <- b10[21:39,]
+b11 <- b11[21:78,]
+b12 <- b12[21:46,]
+b13 <- b13[21:41,]
+b14 <- b14[21:34,]
+b15 <- b15[21:45,]
+b16 <- b16[20:43,]
+b17 <- b17[21:41,]
+b18 <- b18[21:74,]
+```
+
+
+```{r}
+tampa_words <- list(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18)  # create a list of all of the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+tampa_words <- lapply(tampa_words, combinecols)  # combine the columns of the articles so that each article only has one column of text
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+combine_tampa_words <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(tampa_words[x]), 'V1', paste('V', nrow(data.frame(tampa_words[x])), sep="")) # use the data prep function for the x-th article
+}
+
+combined_tampa_words <- data.frame(sapply(1:18, combine_tampa_words))
+
+long_tampa_words <- data.frame(t(combined_tampa_words))
+
+long_tampa_words <- long_tampa_words %>%    # unnest to words, remove the anti words, and count the frequency of words
+  unnest_tokens(word, t.combined_tampa_words.)%>%
+  anti_join(stop_words)%>%
+  count(word, sort=TRUE)
+
+datatable(long_tampa_words)
+```
+
+### Word Cloud of Most Popular Words
+```{r}
+set.seed(1)
+ggplot(long_tampa_words[1:50,], aes(label = word, size = n)  # creates world cloud
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+```
+
+Both the list of most frequent words and the word cloud which sizes words based on their frequency indicate that Florida, Biden, city, energy, red, bay, warming, and world are the most commonly used terms in the climate change articles.  This suggests an emphasis on Florida in the face of the climate change issue, but also connects to the greater world and country.  Furthermore, the term "Biden" suggests that many of the articles may have to do with political agendas and topics.  Other terms such as "red," "bay," and "warming" are likely in connection to the deteriorating aquatic life on the Florida coast due to global warming.  
+
+### Sentiment Analysis Methods {.tabset}
+```{r}
+tampa_sentiment_affin <- long_tampa_words %>%
+  inner_join(get_sentiments("afinn")) #using a inner join to match words and add the sentiment variable
+
+tampa_sentiment_nrc <- long_tampa_words %>%
+  inner_join(get_sentiments("nrc"))
+
+tampa_sentiment_bing <- long_tampa_words %>%
+  inner_join(get_sentiments("bing"))
+```
+
+#### AFFIN
+```{r}
+tampa_affin_plot <- ggplot(data = tampa_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram(binwidth = 1)+
+  ggtitle("Tampa Bay Sentiment Range")+
+  theme_minimal()
+
+tampa_affin_plot
+```
+
+#### NRC
+```{r}
+table(tampa_sentiment_nrc$sentiment)
+```
+
+
+#### BING
+```{r}
+table(tampa_sentiment_bing$sentiment) 
+```
+
+Looking at the AFFIn histogram, it appears that there is a large portion of both positive and negative sentiment in the articles, possibly leaning slightly more negative.  This is supported by the BING method, which indicates that roughly 60% of the sentiment in negative and 40% is positive.  When analyzing sentiment using more specific emotion categories from the NRC method, it appears that most of the sentiment is positive, followed by negative, trust, fear, and anticipation sentiments.  These are identical to the top five sentiments of the Philadelphia region, and likely for similar reason.  The trust and anticipation sentiments are likely due to articles that discuss combatting current climate change trends for the better, while the fear sentiments are likely coming from articles that emphasize the current threats of climate change.  
+
+### Term Frequency - Inverse Document Frequency Analysis
+
+```{r}
+word_bagsb <- list(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18) # create a list of all of the articles
+
+word_bagsb <- lapply(word_bagsb, combinecols)  # combine the columns of the articles so that each article only has one column of text
+
+bagb <- data_prep(data.frame(word_bagsb[1]), 'V1', paste('V', nrow(data.frame(word_bagsb[1])), sep=""))
+
+combine_bagsb <- function(x){   # function to apply the data prep function to varying row indices
+  data_prep(data.frame(word_bagsb[x]), 'V1', paste('V', nrow(data.frame(word_bagsb[x])), sep=""))  # use the data prep function for the x-th article
+}
+
+combined_word_bagsb <- data.frame(sapply(1:18, combine_bagsb))   # apply the combine bags function to each of the article indices
+
+article <- c("Article 1", "Article 2","Article 3","Article 4","Article 5","Article 6","Article 7","Article 8","Article 9","Article 10","Article 11","Article 12","Article 13","Article 14","Article 15","Article 16","Article 17","Article 18")  # create vector of article numbers
+
+tf_idf_textb <- tibble(article,text=t(tibble(combined_word_bagsb, .name_repair = "universal"))) # create a tibble with combined word bags data and corresponding article names 
+
+word_countb <- tf_idf_textb %>%   # counts frequency on individual words
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+
+total_wordsb <- word_countb %>%    # counts total words in each document by president 
+  group_by(article) %>% 
+  summarize(total = sum(n))
+
+article_wordsb <- left_join(word_countb, total_wordsb)  # combine the data from the word count and total words data sets
+
+
+article_wordsb <- article_wordsb %>%  # calculate the tf_idf using the bind_tf_idf function : if * idf = tf_idf
+  bind_tf_idf(word, article, n)
+
+sorted_article_wordsb <- article_wordsb[order(article_wordsb$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+
+datatable(sorted_article_wordsb)  # print the tf_idf data
+
+```
+
+Using the Term Frequency - Inverse Document Frequency analysis, we can determine which terms are most prevalent in articles relative to their overall prevalence in the newspaper.  The results depict that terms which are most prevalent to certain articles are those that are specific to a person, place, or thing that is not necessarily relevant to climate change in a general sense.  For example, Article 14 discusses the death of marine life caused by climate change rather than tropical storm Elsa, so its stand out term is "Elsa."  Similarly, Article 5 discusses the efforts of a climate change activist Venessa Nakate during a UN conference, so its stand out term is "Nakate."
+
+
+
