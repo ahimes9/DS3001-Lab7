@@ -379,3 +379,7 @@ desc_article_words <- article_words[order(article_words$tf_idf, decreasing = TRU
 
 datatable(desc_article_words)  # print the tf_idf data
 ```
+
+In looking at the tf-idf analysis, there are a few things to notice. Firstly, "fall" is the most frequent iteration. However, I do not believe that this reflects the true nature of the corpus as a whole or even any attitudes of the region. Rather, there was a single article in the corpus that discussed the effects of climate change on fall foliage. It is possible that this article is also causing words like trees and forests to show up as very high frequency. That all being said, we are seeing words that fit with the landscape of the region. Missouri is landlocked and very forested, so it makes sense that we are not seeing words related to water (as we did with Chicago).
+
+We probably have a similar thing occuring with the word "google", explaining why it shows up as the 4th most frequent tf-idf word. With all of that being said, there does not appear to be a particularly polarizing attitude in this region with regards to climate change. I wonder if the lack of intense emotion in the corpus has to do with the fact that Missouri sits in the middle of the US, and so the effects of climate change may not manifest in ways that are as obvious as water levels and intense lake-effect weather in Chicago and the rest of the Great Lakes region!
