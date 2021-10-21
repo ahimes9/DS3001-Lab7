@@ -268,7 +268,7 @@ full_missouri_words <- full_missouri_words %>%
 datatable(full_missouri_words)
 ```
 
-Even just from this initial EDA, we can see that the most common words are climate, change, water, science, global, people, and lake. Considering that we are looking at a corpus that is dealing with the Great Lakes Region, all of these words make sense! Chicago sits right on Lake Michigan, so the words are relating to climate change as it deals with lakes and lake effect.
+Even just from this initial EDA, we can see that the most common words are climate, change, forest, world, report, u.s., trees, and water. Similarly to the corpus from Chicago, it appears as though this corpus also has an attitude that is very characterized to the landscape of the region. Missouri sits in the Midwest and is a landlocked state, so naturally people in that region will be largely concerned with the local forests and trees. However, it may be true that Missouri has a bit more of a global perspective as it comes to climate change, seeing that both "world" and "countries" appear in the top 10 words.
 
 ### Word Cloud
 ```{r}
@@ -279,7 +279,7 @@ ggplot(full_missouri_words[1:50,], aes(label = word, size = n)  # creates world 
   theme_minimal()
 ```
 
-As we noted through the intial word count, we can see that the most common words appear to be climate, change, water, lake, people, global, science, etc. This shows how the attitudes towards climate change in Chicago and the Great Lakes Region appear to be pretty centered around the lake and how warming will affect the lake and the people that live near the lakes. Because there are large populations that live around the lakes, they must be particularly concerned with how climate change will affect the lake water and surrounding areas.
+We can see the same results from the EDA above being reflected in the word cloud. Unsurprisingly, climate and change are the two most prominent words. After that, we see words such as forest, trees, people, government, and development. These words all feel very localized to the region, and reflect that there may be deep thoughts surrounding climate change as it reltaes to the immediate landscape of the region.
 
 ### Sentiment Analysis Methods
 ```{r}
@@ -320,7 +320,7 @@ table(missouri_sentiment_bing$sentiment)
 ```
 
 ### Sentiment Analysis Discussion
-Looking initially at the affin plot, it looks like there is a pretty even distribution of words that are scored as negative vs. positive, with a slight skew towards the negative words. This is confirmed by the bing table, where we can see that there is a slight negative skew. Additionally, if we look at the nrc table, there are many words categorized as both negative and positive, as well as words that are categorized with both fear and trust. It is interesting to me that there are nearly the same number of words categorized under fear and trust, because to me, those are quite contrasting! Perhaps there is a part of the corpus that is able to place their trust in the future and perhaps there is another part of the corpus that still views the future with fear.
+Looking initially at the affin plot, it is very clear that there is a negative skew in the nature of the words. This is confirmed by the counts of the bing table, seeing that there are double the count of negatively characterized words as there are positively characterized words. In looking at the nrc table, it is interesting to see more words characterized as positive rather than negative, and to see a large chunk of words that sit in the context of trust.
 
 
 ### TF-IDF Analysis
