@@ -1,0 +1,300 @@
+---
+title: "text_lab"
+author: "Hayden Ratliff"
+date: "10/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Congratulations you've successfully transferred from being a NBA 'quant' scout to a consultant specializing in US national sentiment! You've been hired by a non-profit in secret to track the level of support nationally and regionally for the Climate Change issues. The goal is to get a general idea of patterns associated with articles being written on the broad topic of Climate Change (you can also choose to select a sub-topic). In doing so your data science team has decided to explore periodicals from around the country in a effort to track the relative positive or negative sentiment and word frequencies. Luckily you have access to a world class library search engine call LexusNexus (NexusUni) that provides access to newspapers from around the country dating back decades. You'll first need to decided what words you want to track and what time might be interesting to begin your search. 
+
+You'll need to select several newspapers from different regions in the country limiting the search to 100 articles from each paper, run sentiment analysis with each newspaper serving as a corpus and then compare the level of positive or negative connotation associated with the outcomes. Also, work through tf*idf on each corpus (newspapers) and compare the differences between the distributions (5 to 6 newspapers should be fine)
+
+Your main goal (and the goal of all practicing data scientists!) is to translate this information into action. What patterns do you see, why do you believe this to be the case? What additional information might you want? Be as specific as possible, but keep in mind this is an initial exploratory effort...more analysis might be needed...but the result can and should advise the next steps you present to the firm. 
+
+
+Please submit a cleanly knitted HTML file describing in detail the steps you 
+took along the way, the results of your analysis and most importantly the implications/next steps you would recommend. A selected few of you will report your final results and recommendations next week in class (5 minutes per group) 
+
+You will need also need to try to collaborate within your group via a GitHub repo, if you choose it would be fine to assign 1 or 2 regions/newspapers per group member, that can then be added to the repo individually. Create a main repo, everyone should work in this repo and submit independently using forking/pull requests. Select a repo owner that sets up access (read access) for the week, we will rotate owners next week. 
+Also, submit a link to your the GitHub repo (every group member can submit the same link). 
+
+Here is the link to the database search via the UVA Library that should lead you to LexusNexus (Now Nexas Uni)
+https://guides.lib.virginia.edu/az.php?a=l
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+## Newspaper 1: The Los Angeles Times
+```{r}
+library(tidyverse)  # load the required packages
+library(tidytext)
+library(ggwordcloud)
+library(gutenbergr)
+library(textdata)
+library(DT)
+library(patchwork)
+```
+
+### Reading in, Cleaning, and Structuring Article Files {.tabset}
+
+```{r}
+# reading in all of the txt files
+setwd("C:/School/UVA/! Third Year/Fall Term/DS 3001/DS-3001/07_text_mining/la times/")
+a1 <- read.delim("biden_climate.txt", header = FALSE)
+a2 <- read.delim("fossil_fuels.txt", header = FALSE)
+a3 <- read.delim("cal_drought.txt", header = FALSE)
+a4 <- read.delim("climate_hope.txt", header = FALSE)
+a5 <- read.delim("climate_opera.txt", header = FALSE)
+a6 <- read.delim("desert_cities.txt", header = FALSE)
+a7 <- read.delim("diane_weyermann.txt", header = FALSE)
+a8 <- read.delim("google.txt", header = FALSE)
+a9 <- read.delim("harris_mead.txt", header = FALSE)
+a10 <- read.delim("nobel.txt", header = FALSE)
+
+```
+
+I already trimmed the files when converting them to .txt files, so there is no need for further trimming.
+
+```{r}
+la_words <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)  # create a list of all of the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+la_words <- lapply(la_words, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+combine_la_words <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(la_words[x]), 'V1', paste('V', nrow(data.frame(la_words[x])), sep="")) # use the data prep function for the x-th article
+}
+combined_la_words <- data.frame(sapply(1:10, combine_la_words))
+long_la_words <- data.frame(t(combined_la_words))
+long_la_words <- long_la_words %>%    # unnest to words, remove the anti words, and count the frequency of words
+  unnest_tokens(word, t.combined_la_words.)%>%
+  anti_join(stop_words)%>%
+  count(word, sort=TRUE)
+datatable(long_la_words)
+```
+
+### Word Cloud of Most Popular Words
+```{r}
+set.seed(1)
+ggplot(long_la_words[1:50,], aes(label = word, size = n)  # creates world cloud
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+```
+
+
+I downloaded 10 articles from the LA times from LexusNexus (Now Nexas Uni).  The articles have been stripped to their body text and the frequencies of words within the text have been summed.
+
+### Sentiment Analysis Methods {.tabset}
+```{r}
+la_sentiment_affin <- long_la_words %>%
+  inner_join(get_sentiments("afinn")) #using a inner join to match words and add the sentiment variable
+la_sentiment_nrc <- long_la_words %>%
+  inner_join(get_sentiments("nrc"))
+la_sentiment_bing <- long_la_words %>%
+  inner_join(get_sentiments("bing"))
+```
+
+#### AFFIN
+```{r}
+la_affin_plot <- ggplot(data = la_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram(binwidth = 1)+
+  ggtitle("Philadelphia Sentiment Range")+
+  theme_minimal()
+la_affin_plot
+```
+
+
+#### NRC
+```{r}
+table(la_sentiment_nrc$sentiment)
+```
+
+
+#### BING
+```{r}
+table(la_sentiment_bing$sentiment) 
+```
+
+### Sentiment Analysis Discussion
+DO THIS 
+
+
+### Term Frequency - Inverse Document Frequency Analysis 
+
+```{r}
+word_bags <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)  # create a list of all of the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+word_bags <- lapply(word_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+combine_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(word_bags[x]), 'V1', paste('V', nrow(data.frame(word_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+combined_word_bags <- data.frame(sapply(1:10, combine_bags))  # apply the combine bags function to each of the article indices
+article <- c("Article 1", "Article 2","Article 3","Article 4","Article 5","Article 6","Article 7","Article 8","Article 9","Article 10")  # create vector of article numbers
+tf_idf_text <- tibble(article,text=t(tibble(combined_word_bags, .name_repair = "universal")))  # create a tibble with combined word bags data and corresponding article names 
+word_count <- tf_idf_text %>%   # counts frequency on individual words
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+total_words <- word_count %>%    # counts total words in each article
+  group_by(article) %>% 
+  summarize(total = sum(n))
+article_words <- left_join(word_count, total_words)   # combine the data from the word count and total words data sets
+article_words <- article_words %>%  # calculate the tf_idf using the bind_tf_idf function : if * idf = tf_idf
+  bind_tf_idf(word, article, n)  
+sorted_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+datatable(sorted_article_words)  # print the tf_idf data
+```
+
+By conducting Term Frequency - Inverse Document Frequency analysis, we can see which terms are most prevalent in articles relative to their prevalence in the overall newspaper.  It appears that the terms with greatest relative prevalence are those related to specific topics or entities not necessarily relevant to the topic of Climate Change in general.  For example, Article 8 discusses the effects of climate change on wine, a specific topic not generally connected to climate change discussions, so terms that stand out are "wine" and "varieties."  Further, Article 13 highlights the efforts of index fund companies to combat climate change, so terms such as "Vanguard" and "Blackrock," index fund leaders, and "index" and "fund" stand out.   
+
+## Newspaper 2: University of San Fransisco Law Review
+
+### Reading in, Cleaning, and Structuring Article Files {.tabset}
+
+```{r}
+# reading in all of the txt files
+setwd("C:/School/UVA/! Third Year/Fall Term/DS 3001/DS-3001/07_text_mining/san fran law")
+b1 <- read.csv("ej.txt", header = FALSE)
+b2 <- read.csv("fa.txt", header = FALSE)
+b3 <- read.csv("fisheries.txt", header = FALSE)
+b4 <- read.csv("fracking.txt", header = FALSE)
+b5 <- read.csv("green_efficiency.txt", header = FALSE)
+b6 <- read.csv("groundwater.txt", header = FALSE)
+b7 <- read.csv("jurisprudence.txt", header = FALSE)
+b8 <- read.csv("mitigation.txt", header = FALSE)
+b9 <- read.csv("symposium.txt", header = FALSE)
+b10 <- read.csv("water_crisis.txt", header = FALSE)
+```
+
+I downloaded the 
+
+```{r}
+sf_words <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)  # create a list of all of the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+sf_words <- lapply(sf_words, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+combine_sf_words <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(sf_words[x]), 'V1', paste('V', nrow(data.frame(sf_words[x])), sep="")) # use the data prep function for the x-th article
+}
+combined_sf_words <- data.frame(sapply(1:10, combine_sf_words))
+long_sf_words <- data.frame(t(combined_sf_words))
+long_sf_words <- long_sf_words %>%    # unnest to words, remove the anti words, and count the frequency of words
+  unnest_tokens(word, t.combined_sf_words.)%>%
+  anti_join(stop_words)%>%
+  count(word, sort=TRUE)
+datatable(long_sf_words)
+```
+
+### Word Cloud of Most Popular Words
+```{r}
+set.seed(1)
+ggplot(long_sf_words[1:50,], aes(label = word, size = n)  # creates world cloud
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+```
+
+As depicted by both the list of most frequent words and the word cloud which sizes words based in prevalence, the most common terms used along with climate change in the Philadelphia region are water, people, Pennsylvania, weather, environmental, carbon, flood, and plant.  This seems to portray an internal focus on the people of Pennsylvania rather than a more outward focus towards the country or world-wide climate change issue.  Furthermore, there appears to be an emphasis on the environment, with water, flooding, storms, and emissions all written in the word cloud, as well as reference to hurricane Ida.  Finally, there appears to be a slight draw to the stock market as Vanguard and funds, presumably mutual funds, are listed in the word cloud.  This could be due to the close proximity to New York City.  
+
+### Sentiment Analysis Methods {.tabset}
+```{r}
+sf_sentiment_affin <- long_sf_words %>%
+  inner_join(get_sentiments("afinn")) #using a inner join to match words and add the sentiment variable
+sf_sentiment_nrc <- long_sf_words %>%
+  inner_join(get_sentiments("nrc"))
+sf_sentiment_bing <- long_sf_words %>%
+  inner_join(get_sentiments("bing"))
+```
+
+#### AFFIN
+```{r}
+sf_affin_plot <- ggplot(data = sf_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram(binwidth = 1)+
+  ggtitle("Philadelphia Sentiment Range")+
+  theme_minimal()
+sf_affin_plot
+```
+
+
+#### NRC
+```{r}
+table(sf_sentiment_nrc$sentiment)
+```
+
+
+#### BING
+```{r}
+table(sf_sentiment_bing$sentiment) 
+```
+
+### Sentiment Analysis Discussion
+Using the AFFIN scale plot, it appears that while sentiment might be slightly more negative regarding climate change, the divide is overall relatively even between positive and negative terminology.  This is emphasized by the BING negative vs positive method in that around 59% of the words were negative and 41% were positive.  Looking more in depth at different forms of sentiment using the NRC method, positive sentiment actually has the most words associated with it, followed by negative, trust, fear, and anticipation.  The trust and anticipation sentiments could be due to articles that discuss combating the current climate change trends for the improvement of world health, while the fear sentiments are likely coming from articles that discuss the current threats that climate change poses.  
+
+
+### Term Frequency - Inverse Document Frequency Analysis 
+
+```{r}
+word_bags <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)  # create a list of all of the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+word_bags <- lapply(word_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+combine_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(word_bags[x]), 'V1', paste('V', nrow(data.frame(word_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+combined_word_bags <- data.frame(sapply(1:10, combine_bags))  # apply the combine bags function to each of the article indices
+article <- c("Article 1", "Article 2","Article 3","Article 4","Article 5","Article 6","Article 7","Article 8","Article 9","Article 10")  # create vector of article numbers
+tf_idf_text <- tibble(article,text=t(tibble(combined_word_bags, .name_repair = "universal")))  # create a tibble with combined word bags data and corresponding article names 
+word_count <- tf_idf_text %>%   # counts frequency on individual words
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+total_words <- word_count %>%    # counts total words in each article
+  group_by(article) %>% 
+  summarize(total = sum(n))
+article_words <- left_join(word_count, total_words)   # combine the data from the word count and total words data sets
+article_words <- article_words %>%  # calculate the tf_idf using the bind_tf_idf function : if * idf = tf_idf
+  bind_tf_idf(word, article, n)  
+sorted_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+datatable(sorted_article_words)  # print the tf_idf data
+```
+
+By conducting Term Frequency - Inverse Document Frequency analysis, we can see which terms are most prevalent in articles relative to their prevalence in the overall newspaper.  It appears that the terms with greatest relative prevalence are those related to specific topics or entities not necessarily relevant to the topic of Climate Change in general.  For example, Article 8 discusses the effects of climate change on wine, a specific topic not generally connected to climate change discussions, so terms that stand out are "wine" and "varieties."  Further, Article 13 highlights the efforts of index fund companies to combat climate change, so terms such as "Vanguard" and "Blackrock," index fund leaders, and "index" and "fund" stand out.   
+
+## Patterns and Next Steps 
+
+Overall, there is a variety of more positively and more negatively-sentimented articles.  It appears that the overall trend leans more negative, which is not surprising given that climate change itself is a negatively connotative phenomena.  Many of the articles discuss a negative impact of climate change such as a decrease in species health or an increase in economic problems.  Articles that are not directly focused on a negative impact are typically centered around politics and have a relatively neutral tone, when focusing on the facts, or a polarizing positive or negative tone when discussing a particular candidate.  There do appear to be a subset of articles that lean more positive in sentiment, such as Article 13 from the Philadelphia Inquirer, that are typically written to discuss efforts to better the climate change issue.  While these articles have tones of anticipation and excitement, there is also some negativity when explaining the current state and difficulty in combating current climate trends.  
+
+To continue the research process in understanding sentiment regarding climate change, I would suggest looking into articles categorized by field of interest.  Through initial analysis, it has become apparent that climate change plays a role in many different fields, from food and drink industries, to wildlife activism, to political settings.  With such a broad analysis, these different fields can make accurate and specific conclusions challenging, often leading to over-generalizations of public sentiment.  A breakdown analysis on the other hand will allow for sentiment to be understood more concretely at the field level, and its results can be used to analyze sentiment on a article by article basis.  This more detailed analyses will require additional articles from each newspaper as well as efforts to categorize these articles into more nuclear fields.  Once newspaper articles are analyzed by category, we will gain a more concrete idea of public sentiment regarding climate change specific to different industries with unique values.  
+
