@@ -1,15 +1,14 @@
 ---
 title: "Text Mining Group Lab"
-author: "Madeleine Jones"
+author: "Madeleine Jones, Audrey Himes, Hayden Ratliff"
 date: "10/20/2021"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 ```
 
-## Newspaper 1: The Philadelphia Inquirer 
 ```{r}
 library(tidyverse)  # load the required packages
 library(tidytext)
@@ -21,7 +20,7 @@ library(patchwork)
 ```
 
 ```{r}
-# reading in all of the txt files
+# reading in all of the Philly txt files
 a1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/A frightening future for butterflies.txt", header = FALSE)
 a2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/A Rising Threat To Water Systems.txt", header = FALSE)
 a3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Philly Paper/Along coast_ climate change demands urgent action.txt", header = FALSE)
@@ -65,8 +64,14 @@ a18 <- a18[22:42,]
 
 ```
 
+
 ```{r}
 word_bags <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18)  # create a list of all of the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
 
 word_bags <- lapply(word_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
 
@@ -100,14 +105,11 @@ article_words <- article_words %>%  # calculate the tf_idf using the bind_tf_idf
 
 sorted_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
 
-datatable(sorted_article_words) # print the tf_idf data
-
-philly <- head(sorted_article_words$word,10)  # save top 10 words from philly
+Philadelphia <- head(sorted_article_words$word,10)  # print the tf_idf data
 ```
 
-## Newspaper 2: The Tampa Bay Times
 ```{r}
-# reading in all of the txt files
+# reading in all of the tampa bay files
 b1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/As extreme weather increases_ climate misinformation ad.txt", header = FALSE)
 b2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Biden promises _relentless diplomacy_ to skeptical alli.txt", header = FALSE)
 b3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/Tampa Paper/Biden says budget talks hit _stalemate__ _3.5T may take.txt", header = FALSE)
@@ -184,16 +186,233 @@ article_wordsb <- article_wordsb %>%  # calculate the tf_idf using the bind_tf_i
 
 sorted_article_wordsb <- article_wordsb[order(article_wordsb$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
 
-datatable(sorted_article_wordsb)  # print the tf_idf data
-
-tampa <- head(sorted_article_wordsb$word,10) # save top 10 words from tampa 
+TampaBay <- head(sorted_article_wordsb$word,10) # save top 10 words from tampa 
 ```
-
-
-
-## Term Frequency - Inverse Document Frequency From All Regions 
 
 ```{r}
-datatable(data_frame(philly, tampa))
+# reading in all of the Los Angeles txt files
+a1 <- read.delim( "/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/biden_climate.txt", header = FALSE)
+a2 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/fossil_fuels.txt", header = FALSE)
+a3 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/cal_drought.txt", header = FALSE)
+a4 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/climate_hope.txt", header = FALSE)
+a5 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/climate_opera.txt", header = FALSE)
+a6 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/desert_cities.txt", header = FALSE)
+a7 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/diane_weyermann.txt", header = FALSE)
+a8 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/google.txt", header = FALSE)
+a9 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/harris_mead.txt", header = FALSE)
+a10 <- read.delim("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/la times/nobel.txt", header = FALSE)
 ```
 
+```{r}
+word_bags <- list(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)  # create a list of all of the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+word_bags <- lapply(word_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+combine_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(word_bags[x]), 'V1', paste('V', nrow(data.frame(word_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+combined_word_bags <- data.frame(sapply(1:10, combine_bags))  # apply the combine bags function to each of the article indices
+article <- c("Article 1", "Article 2","Article 3","Article 4","Article 5","Article 6","Article 7","Article 8","Article 9","Article 10")  # create vector of article numbers
+tf_idf_text <- tibble(article,text=t(tibble(combined_word_bags, .name_repair = "universal")))  # create a tibble with combined word bags data and corresponding article names 
+word_count <- tf_idf_text %>%   # counts frequency on individual words
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+total_words <- word_count %>%    # counts total words in each article
+  group_by(article) %>% 
+  summarize(total = sum(n))
+article_words <- left_join(word_count, total_words)   # combine the data from the word count and total words data sets
+article_words <- article_words %>%  # calculate the tf_idf using the bind_tf_idf function : if * idf = tf_idf
+  bind_tf_idf(word, article, n)  
+sorted_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+LosAngeles <- head(sorted_article_words$word,10)
+```
+
+```{r}
+# reading in all of the San Fransisco txt files
+b1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/ej.txt", header = FALSE)
+b2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/fa.txt", header = FALSE)
+b3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/fisheries.txt", header = FALSE)
+b4 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/fracking.txt", header = FALSE)
+b5 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/green_efficiency.txt", header = FALSE)
+b6 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/groundwater.txt", header = FALSE)
+b7 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/jurisprudence.txt", header = FALSE)
+b8 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/mitigation.txt", header = FALSE)
+b9 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/symposium.txt", header = FALSE)
+b10 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/zipped article text/san fran law/water_crisis.txt", header = FALSE)
+```
+
+```{r}
+word_bags <- list(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10)  # create a list of all of the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+word_bags <- lapply(word_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+combine_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(word_bags[x]), 'V1', paste('V', nrow(data.frame(word_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+combined_word_bags <- data.frame(sapply(1:10, combine_bags))  # apply the combine bags function to each of the article indices
+article <- c("Article 1", "Article 2","Article 3","Article 4","Article 5","Article 6","Article 7","Article 8","Article 9","Article 10")  # create vector of article numbers
+tf_idf_text <- tibble(article,text=t(tibble(combined_word_bags, .name_repair = "universal")))  # create a tibble with combined word bags data and corresponding article names 
+word_count <- tf_idf_text %>%   # counts frequency on individual words
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+total_words <- word_count %>%    # counts total words in each article
+  group_by(article) %>% 
+  summarize(total = sum(n))
+article_words <- left_join(word_count, total_words)   # combine the data from the word count and total words data sets
+article_words <- article_words %>%  # calculate the tf_idf using the bind_tf_idf function : if * idf = tf_idf
+  bind_tf_idf(word, article, n)  
+sorted_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+SanFransisco <- head(sorted_article_words$word,10)
+```
+
+```{r, warning=FALSE}
+### reading in chicago txt files
+chicago1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago1.txt", header = FALSE)
+chicago2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago2.txt", header = FALSE)
+chicago3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago3.txt", header = FALSE)
+chicago4 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago4.txt", header = FALSE)
+chicago5 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago5.txt", header = FALSE)
+chicago6 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago6.txt", header = FALSE)
+chicago7 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago7.txt", header = FALSE)
+chicago8 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago8.txt", header = FALSE)
+chicago9 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago9.txt", header = FALSE)
+chicago10 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/chicago_articles/chicago10.txt", header = FALSE)
+```
+
+```{r, warning=FALSE}
+chicago1 <- chicago1[22:39,]
+chicago2 <- chicago2[22:43,]
+chicago3 <- chicago3[27:43,]
+chicago4 <- chicago4[22:32,]
+chicago5 <- chicago5[22:52,]
+chicago6 <- chicago6[22:30,]
+chicago7 <- chicago7[22:35,]
+chicago8 <- chicago8[22:33,]
+chicago9 <- chicago9[22:35,]
+chicago10 <- chicago10[22:35,]
+```
+
+```{r}
+chicago_bags <- list(chicago1,chicago2,chicago3,chicago4,chicago5,chicago6,chicago7,chicago8,chicago9,chicago10)
+  # bringing down the same functions from above to combine the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+chicago_bags <- lapply(chicago_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+big_chicago_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(chicago_bags[x]), 'V1', paste('V', nrow(data.frame(chicago_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+big_chicago_bags <- data.frame(sapply(1:10, big_chicago_bags))  # apply the combine bags function to each of the article indices
+
+
+article <- c("chicago1","chicago2","chicago3","chicago4","chicago5","chicago6","chicago7","chicago8","chicago9","chicago10")
+tf_idf_text <- tibble(article,text=t(tibble(big_chicago_bags,.name_repair = "universal")))
+
+word_count <- tf_idf_text %>%
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+total_words <- word_count %>% 
+  group_by(article) %>% 
+  summarize(total = sum(n))
+  # adding in total words grouped by article
+article_words <- left_join(word_count, total_words)
+  # joining by article
+
+article_words <- article_words %>%
+  bind_tf_idf(word, article, n)
+    # bind_tf_idf will look for column names specified and will get the frequency counts
+desc_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+Chicago <- head(desc_article_words$word,10) 
+```
+
+```{r, warning=FALSE}
+### reading in missouri txt files
+missouri1 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri1.txt", header = FALSE)
+missouri2 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri2.txt", header = FALSE)
+missouri3 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri3.txt", header = FALSE)
+missouri4 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri4.txt", header = FALSE)
+missouri5 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri5.txt", header = FALSE)
+missouri6 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri6.txt", header = FALSE)
+missouri7 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri7.txt", header = FALSE)
+missouri8 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri8.txt", header = FALSE)
+missouri9 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri9.txt", header = FALSE)
+missouri10 <- read.csv("/Users/mj/Desktop/2021 Fall/DS 3001/DS-3001/07_text_mining/missouri_articles/missouri10.txt", header = FALSE)
+```
+
+```{r, warning=FALSE}
+missouri1 <- missouri1[22:33,]
+missouri2 <- missouri2[22:43,]
+missouri3 <- missouri3[23:53,]
+missouri4 <- missouri4[22:48,]
+missouri5 <- missouri5[23:34,]
+missouri6 <- missouri6[23:44,]
+missouri7 <- missouri7[22:46,]
+missouri8 <- missouri8[22:39,]
+missouri9 <- missouri9[22:35,]
+missouri10 <- missouri10[22:31,]
+```
+
+```{r}
+missouri_bags <- list(missouri1,missouri2,missouri3,missouri4,missouri5,missouri6,missouri7,missouri8,missouri9,missouri10)
+  # bringing down the same functions from above to combine the articles
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+missouri_bags <- lapply(missouri_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+big_missouri_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(missouri_bags[x]), 'V1', paste('V', nrow(data.frame(missouri_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+big_missouri_bags <- data.frame(sapply(1:10, big_missouri_bags))  # apply the combine bags function to each of the article indices
+
+article <- c("missouri1","missouri2","missouri3","missouri4","missouri5","missouri6","missouri7","missouri8","missouri9","missouri10")
+tf_idf_text <- tibble(article,text=t(tibble(big_missouri_bags,.name_repair = "universal")))
+
+word_count <- tf_idf_text %>%
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+total_words <- word_count %>% 
+  group_by(article) %>% 
+  summarize(total = sum(n))
+  # adding in total words grouped by article
+article_words <- left_join(word_count, total_words)
+  # joining by article
+
+article_words <- article_words %>%
+  bind_tf_idf(word, article, n)
+    # bind_tf_idf will look for column names specified and will get the frequency counts
+desc_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+StLouis <- head(desc_article_words$word,10) 
+```
+
+### Term Frequency - Inverse Document Frequency From All Regions 
+
+```{r}
+datatable(data_frame(Philadelphia, TampaBay, Chicago, StLouis, LosAngeles, SanFransisco))
+```
+
+### Patterns and Next Steps 
+First looking at each of the regions individually, it appears that the term frequencies relate closely to the regions they are aligned to.  Beginning with Philadelphia, there is great reference to the stock market and mutual funds with words such as "vanguard," "funds," blackrock," "index," and "pricing" all coming in the top ten.  This makes sense as Philadelphia is the closest city to New York City and the hub of Wall Street.  Next looking at Tampa Bay, there is a focus on how climate change interacts with aquatic life with terms such as "tide," hurricane "elsa," and "red" "tide."  There is also mention of "ranchers" and "ranches" emphasizing the state's extensive farming.  Both of these topics make sense as Florida is a peninsula surrounded by water and made of fertile land for ranching.  In Chicago, there is a lot of terms such as "lakes," "lake," and "water" which all make sense as Chicago is right on Lake Michigan so much of the climate change impacts can be seen along the lake.  In Missouri, there is more language of "earth," "forests," and "trees" in relation to climate change.  This is likely because Missouri is a landlocked state.  In Los Angeles, the terms are more scattered, but a noteworthy focus is competition of fresh water with Phoenix and Arizona as a whole.  This is because locations such as Phoenix and Las Vegas are its main competitors for water, and therefore climate change is emphasizing the water scarcity in the region.  Finally in San Francisco, there is a focus on smaller amounts of water such as groundwater and streams.  This suggests that those in San Francisco are concerned with the water cleanliness of the area, as well as its effect on aquatic life given that "fisheries" is also a prominent term. It is worth noting that there are no terms that appear in the top 10 of more than 1 city.  This suggests that each city is unique in its focuses on climate change and on what climate change is impacting most.  
+
+As for next steps, we would recommend breaking the articles down further into topic categories as well as regional categories.  For example, in Philadelphia there appear to be three main topics which are prominent in the discussion of climate change.  First, there is a political side which is why "Orts," a candidate for state senator is so prominent.  Second, there is an environment side which deals with species health, such as mosquitos and grapes, in relation to the term "wine."  Finally, there is an economic side which relates to mutual funds and the stock market.  A variety of topics is present in all of the different regions and makes specific conclusions about climate change sentiment challenging.  The current results are likely to be over-generalized as some topics will lean towards different sentiments than others.  By breaking down sentiment by both region and topic, we will be able to find the most accurate sense of public sentiment regarding climate change and its real-world impacts.  
