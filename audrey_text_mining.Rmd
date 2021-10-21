@@ -1,0 +1,381 @@
+---
+title: "Untitled"
+author: "Audrey Himes"
+date: "10/20/2021"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)  # load the required packages
+library(tidytext)
+library(ggwordcloud)
+library(gutenbergr)
+library(textdata)
+library(DT)
+library(patchwork)
+```
+
+## Region/Paper1: Chicago Daily Herald
+
+### Initial Data Reading and Cleaning
+```{r, warning=FALSE}
+chicago1 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago1.txt", header = FALSE)
+chicago2 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago2.txt", header = FALSE)
+chicago3 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago3.txt", header = FALSE)
+chicago4 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago4.txt", header = FALSE)
+chicago5 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago5.txt", header = FALSE)
+chicago6 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago6.txt", header = FALSE)
+chicago7 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago7.txt", header = FALSE)
+chicago8 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago8.txt", header = FALSE)
+chicago9 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago9.txt", header = FALSE)
+chicago10 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/chicago10.txt", header = FALSE)
+View(chicago10)
+```
+
+```{r, warning=FALSE}
+chicago1 <- chicago1[22:39,]
+chicago2 <- chicago2[22:43,]
+chicago3 <- chicago3[27:43,]
+chicago4 <- chicago4[22:32,]
+chicago5 <- chicago5[22:52,]
+chicago6 <- chicago6[22:30,]
+chicago7 <- chicago7[22:35,]
+chicago8 <- chicago8[22:33,]
+chicago9 <- chicago9[22:35,]
+chicago10 <- chicago10[22:35,]
+```
+
+```{r, warning=FALSE, message=FALSE}
+chicago_words <- list(chicago1,chicago2,chicago3,chicago4,chicago5,chicago6,chicago7,chicago8,chicago9,chicago10)  
+  # create a list of all of the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+chicago_words <- lapply(chicago_words, combinecols)  
+  # combine the columns of the articles so that each article only has one column of text
+# View(chicago_words)
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+combine_chicago_words <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(chicago_words[x]), 'V1', paste('V', nrow(data.frame(chicago_words[x])), sep="")) # use the data prep function for the x-th article
+}
+
+combined_chicago_words <- data.frame(sapply(1:10, combine_chicago_words))
+
+full_chicago_words <- data.frame(t(combined_chicago_words))
+
+# getting rid of all of the "filler words"
+full_chicago_words <- full_chicago_words %>%    
+  unnest_tokens(word, t.combined_chicago_words.)%>%
+  anti_join(stop_words)%>%
+  count(word, sort=TRUE)
+
+datatable(full_chicago_words)
+```
+
+Even just from this initial EDA, we can see that the most common words are climate, change, water, science, global, people, and lake. Considering that we are looking at a corpus that is dealing with the Great Lakes Region, all of these words make sense! Chicago sits right on Lake Michigan, so the words are relating to climate change as it deals with lakes and lake effect.
+
+### Word Cloud
+```{r}
+set.seed(1984)
+ggplot(full_chicago_words[1:50,], aes(label = word, size = n)  # creates world cloud
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+```
+
+As we noted through the intial word count, we can see that the most common words appear to be climate, change, water, lake, people, global, science, etc. This shows how the attitudes towards climate change in Chicago and the Great Lakes Region appear to be pretty centered around the lake and how warming will affect the lake and the people that live near the lakes. Because there are large populations that live around the lakes, they must be particularly concerned with how climate change will affect the lake water and surrounding areas.
+
+### Sentiment Analysis Methods
+```{r}
+chicago_sentiment_affin <- full_chicago_words %>%
+  inner_join(get_sentiments("afinn")) #using a inner join to match words and add the sentiment variable
+
+chicago_sentiment_nrc <- full_chicago_words %>%
+  inner_join(get_sentiments("nrc"))
+
+chicago_sentiment_bing <- full_chicago_words %>%
+  inner_join(get_sentiments("bing"))
+```
+
+### Creating Sentiment Plots
+
+#### affin plot
+```{r}
+chicago_affin_plot <- ggplot(data = chicago_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram(binwidth = 1)+
+  ggtitle("Chicago Sentiment Range")+
+  theme_minimal()
+
+chicago_affin_plot
+```
+
+
+#### nrc table
+```{r}
+table(chicago_sentiment_nrc$sentiment)
+```
+
+
+#### bing
+```{r}
+table(chicago_sentiment_bing$sentiment) 
+```
+
+### Sentiment Analysis Discussion
+Looking initially at the affin plot, it looks like there is a pretty even distribution of words that are scored as negative vs. positive, with a slight skew towards the negative words. This is confirmed by the bing table, where we can see that there is a slight negative skew. Additionally, if we look at the nrc table, there are many words categorized as both negative and positive, as well as words that are categorized with both fear and trust. It is interesting to me that there are nearly the same number of words categorized under fear and trust, because to me, those are quite contrasting! Perhaps there is a part of the corpus that is able to place their trust in the future and perhaps there is another part of the corpus that still views the future with fear.
+
+
+### TF-IDF Analysis
+
+#### data cleaning (again)
+```{r}
+chicago_bags <- list(chicago1,chicago2,chicago3,chicago4,chicago5,chicago6,chicago7,chicago8,chicago9,chicago10)
+  # bringing down the same functions from above to combine the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+chicago_bags <- lapply(chicago_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+big_chicago_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(chicago_bags[x]), 'V1', paste('V', nrow(data.frame(chicago_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+
+big_chicago_bags <- data.frame(sapply(1:10, big_chicago_bags))  # apply the combine bags function to each of the article indices
+```
+
+#### conducting the analysis
+```{r}
+article <- c("chicago1","chicago2","chicago3","chicago4","chicago5","chicago6","chicago7","chicago8","chicago9","chicago10")
+
+tf_idf_text <- tibble(article,text=t(tibble(big_chicago_bags,.name_repair = "universal")))
+
+View(tf_idf_text)
+
+word_count <- tf_idf_text %>%
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+
+total_words <- word_count %>% 
+  group_by(article) %>% 
+  summarize(total = sum(n))
+  # adding in total words grouped by article
+
+article_words <- left_join(word_count, total_words)
+  # joining by article
+
+View(article_words)
+
+article_words <- article_words %>%
+  bind_tf_idf(word, article, n)
+    # bind_tf_idf will look for column names specified and will get the frequency counts
+
+desc_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+
+datatable(desc_article_words)  # print the tf_idf data
+```
+
+After conducting the tf-idf analysis, we can see that many of the high-frequency words are related to the location of Chicago and the Great Lakes region in general. Essentially, this is showing me that much of the corpus speaks generally about climate change and its effects on the region at large. Additionally, the word "children" is the 9th most frequent word. In this case, we can not fully attribute the weight of children to a general, region-wide concern about climate change as it relates to children. Rather, we must take into account that there was an entire article in the corpus that is related to talking about climate change with children, and this article alone may be weighting the results towards showing children as a high frequency word. 
+
+Another interesting find of the tf-idf analysis is that we no longer see "global" as a top word. When we conducted the initial EDA and create the word cloud, global showed up as one of the top words. However, because in the larger corpus it does not show as a top frequency word (not in the top 10), I would hypothesize that, in terms of the corpus as a whole, the word is less significant. Perhaps this means that the attitudes of the region are not globally focused, but rather choose to view and discuss climate change on a more local and immediate level. 
+
+## Region/Paper 2: 
+
+### Initial Data Reading and Cleaning
+```{r, warning=FALSE}
+missouri1 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri1.txt", header = FALSE)
+missouri2 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri2.txt", header = FALSE)
+missouri3 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri3.txt", header = FALSE)
+missouri4 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri4.txt", header = FALSE)
+missouri5 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri5.txt", header = FALSE)
+missouri6 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri6.txt", header = FALSE)
+missouri7 <- read.csv("//Users/audreyhimes/Documents/UVA F21/DS 3001/missouri7.txt", header = FALSE)
+missouri8 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri8.txt", header = FALSE)
+missouri9 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri9.txt", header = FALSE)
+missouri10 <- read.csv("/Users/audreyhimes/Documents/UVA F21/DS 3001/missouri10.txt", header = FALSE)
+View(missouri10)
+```
+
+```{r, warning=FALSE}
+missouri1 <- missouri1[22:33,]
+missouri2 <- missouri2[22:43,]
+missouri3 <- missouri3[23:53,]
+missouri4 <- missouri4[22:48,]
+missouri5 <- missouri5[23:34,]
+missouri6 <- missouri6[23:44,]
+missouri7 <- missouri7[22:46,]
+missouri8 <- missouri8[22:39,]
+missouri9 <- missouri9[22:35,]
+missouri10 <- missouri10[22:31,]
+```
+
+```{r, warning=FALSE, message=FALSE}
+missouri_words <- list(missouri1,missouri2,missouri3,missouri4,missouri5,missouri6,missouri7,missouri8,missouri9,missouri10)  
+  # create a list of all of the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+missouri_words <- lapply(missouri_words, combinecols)  
+  # combine the columns of the articles so that each article only has one column of text
+# View(chicago_words)
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+combine_missouri_words <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(missouri_words[x]), 'V1', paste('V', nrow(data.frame(missouri_words[x])), sep="")) # use the data prep function for the x-th article
+}
+
+combined_missouri_words <- data.frame(sapply(1:10, combine_missouri_words))
+
+full_missouri_words <- data.frame(t(combined_missouri_words))
+
+# getting rid of all of the "filler words"
+full_missouri_words <- full_missouri_words %>%    
+  unnest_tokens(word, t.combined_missouri_words.)%>%
+  anti_join(stop_words)%>%
+  count(word, sort=TRUE)
+
+datatable(full_missouri_words)
+```
+
+Even just from this initial EDA, we can see that the most common words are climate, change, water, science, global, people, and lake. Considering that we are looking at a corpus that is dealing with the Great Lakes Region, all of these words make sense! Chicago sits right on Lake Michigan, so the words are relating to climate change as it deals with lakes and lake effect.
+
+### Word Cloud
+```{r}
+set.seed(1984)
+ggplot(full_missouri_words[1:50,], aes(label = word, size = n)  # creates world cloud
+       ) +
+  geom_text_wordcloud() +
+  theme_minimal()
+```
+
+As we noted through the intial word count, we can see that the most common words appear to be climate, change, water, lake, people, global, science, etc. This shows how the attitudes towards climate change in Chicago and the Great Lakes Region appear to be pretty centered around the lake and how warming will affect the lake and the people that live near the lakes. Because there are large populations that live around the lakes, they must be particularly concerned with how climate change will affect the lake water and surrounding areas.
+
+### Sentiment Analysis Methods
+```{r}
+missouri_sentiment_affin <- full_missouri_words %>%
+  inner_join(get_sentiments("afinn")) #using a inner join to match words and add the sentiment variable
+
+missouri_sentiment_nrc <- full_missouri_words %>%
+  inner_join(get_sentiments("nrc"))
+
+missouri_sentiment_bing <- full_missouri_words %>%
+  inner_join(get_sentiments("bing"))
+```
+
+### Creating Sentiment Plots
+
+#### affin plot
+```{r}
+missouri_affin_plot <- ggplot(data = missouri_sentiment_affin, 
+       aes(x=value)
+        )+
+  geom_histogram(binwidth = 1)+
+  ggtitle("Missouri Sentiment Range")+
+  theme_minimal()
+
+missouri_affin_plot
+```
+
+
+#### nrc table
+```{r}
+table(missouri_sentiment_nrc$sentiment)
+```
+
+
+#### bing
+```{r}
+table(missouri_sentiment_bing$sentiment) 
+```
+
+### Sentiment Analysis Discussion
+Looking initially at the affin plot, it looks like there is a pretty even distribution of words that are scored as negative vs. positive, with a slight skew towards the negative words. This is confirmed by the bing table, where we can see that there is a slight negative skew. Additionally, if we look at the nrc table, there are many words categorized as both negative and positive, as well as words that are categorized with both fear and trust. It is interesting to me that there are nearly the same number of words categorized under fear and trust, because to me, those are quite contrasting! Perhaps there is a part of the corpus that is able to place their trust in the future and perhaps there is another part of the corpus that still views the future with fear.
+
+
+### TF-IDF Analysis
+
+#### data cleaning (again)
+```{r}
+missouri_bags <- list(missouri1,missouri2,missouri3,missouri4,missouri5,missouri6,missouri7,missouri8,missouri9,missouri10)
+  # bringing down the same functions from above to combine the articles
+
+combinecols <- function(x){  # function to combine the three columns of each txt file into one text function
+  x$text <- paste(x$V1, x$V2, x$V3)  # paste function takes the input columns and "pastes" them into the new text column
+  return(data.frame(x$text))  # return just the completed text column
+}
+
+missouri_bags <- lapply(missouri_bags, combinecols)  # combine the columns of the articles so that each article only has one column of text
+
+data_prep <- function(x,y,z){  # function to prep the word data by putting into one cell for each article
+  i <- as_tibble(t(x))  # transpose so its not long, and is wide in one cell 
+  ii <- unite(i,"x.text",y:z,remove = TRUE,sep = "")  # unite/ combine the text into one cell 
+}
+
+big_missouri_bags <- function(x){  # function to apply the data prep function to varying row indices
+  data_prep(data.frame(missouri_bags[x]), 'V1', paste('V', nrow(data.frame(missouri_bags[x])), sep="")) # use the data prep function for the x-th article
+}
+
+big_missouri_bags <- data.frame(sapply(1:10, big_missouri_bags))  # apply the combine bags function to each of the article indices
+```
+
+#### conducting the analysis
+```{r}
+article <- c("missouri1","missouri2","missouri3","missouri4","missouri5","missouri6","missouri7","missouri8","missouri9","missouri10")
+
+tf_idf_text <- tibble(article,text=t(tibble(big_missouri_bags,.name_repair = "universal")))
+
+View(tf_idf_text)
+
+word_count <- tf_idf_text %>%
+  unnest_tokens(word, text) %>%
+  count(article, word, sort = TRUE)
+
+total_words <- word_count %>% 
+  group_by(article) %>% 
+  summarize(total = sum(n))
+  # adding in total words grouped by article
+
+article_words <- left_join(word_count, total_words)
+  # joining by article
+
+View(article_words)
+
+article_words <- article_words %>%
+  bind_tf_idf(word, article, n)
+    # bind_tf_idf will look for column names specified and will get the frequency counts
+
+desc_article_words <- article_words[order(article_words$tf_idf, decreasing = TRUE),]  # sort the tf_idf in descending order
+
+datatable(desc_article_words)  # print the tf_idf data
+```
